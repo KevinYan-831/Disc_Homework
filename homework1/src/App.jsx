@@ -113,18 +113,14 @@ const [count, setCount] = useState(0)
 
   return (
     <div className="app-shell">
-      <main className="content">
-        <NavBar title="Pet Your Pet" home="Home" text1="About" text2="Contact" text3="Sign Up/ Log In" />
+      <NavBar title="Pet Your Pet" home="Home" text1="About" text2="Contact" text3="Sign Up/ Log In" />
         <PetCat count={count} onPet={handlePet} />
-
         <div className="progress mt-3" role="progressbar" aria-valuenow={progressPercentage} aria-valuemin="0" aria-valuemax="100">
           <div className="progress-bar" style={{ width: `${progressPercentage}%` }}>
             {progressPercentage}%
           </div>
         </div>
-
         <MeowCounter progressPercentage={progressPercentage} showMeow={showMeow} />
-      </main>
     </div>
   )
 }
