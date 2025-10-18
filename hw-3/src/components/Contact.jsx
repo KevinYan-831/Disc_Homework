@@ -13,18 +13,18 @@ function Contact() {
             <ul className="list-unstyled">
               <li className="mb-3">
                 <strong>📧 Email:</strong>{' '}
-                <a href="mailto:your.email@example.com">your.email@example.com</a>
+                <a href="mailto:JixinYan2029@u.northwestern.edu">JixinYan2029@u.northwestern.edu</a>
               </li>
               <li className="mb-3">
                 <strong>💼 LinkedIn:</strong>{' '}
-                <a href="https://linkedin.com/in/yourprofile" target="_blank" rel="noopener noreferrer">
-                  linkedin.com/in/yourprofile
+                <a href="https://linkedin.com/in/jixin-yan" target="_blank" rel="noopener noreferrer">
+                  linkedin.com/in/jixin-yan
                 </a>
               </li>
               <li className="mb-3">
                 <strong>💻 GitHub:</strong>{' '}
-                <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer">
-                  github.com/yourusername
+                <a href="https://github.com/KevinYan-831" target="_blank" rel="noopener noreferrer">
+                  github.com/KevinYan-831
                 </a>
               </li>
             </ul>

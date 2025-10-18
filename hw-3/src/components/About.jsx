@@ -10,23 +10,14 @@ function About() {
             <div className="col-md-12">
               <h3>Welcome to Pet Your Pet! 🐱</h3>
               <p>
-                This is a fun and interactive application where you can pet virtual cats 
-                and watch them react to your affection!
-              </p>
-              <p>
-                Every pet counts! Watch the progress bar fill up as you show your cat some love. 
-                When you reach certain milestones, your cat will change its expression and even meow!
+                This is a fun and interactive application where you create customized profile for your own cute pet
               </p>
               <h4 className="mt-4">Features:</h4>
               <ul>
-                <li>Interactive cat petting experience</li>
-                <li>Real-time progress tracking</li>
-                <li>Multiple cat expressions</li>
-                <li>Meow counter to track your achievements</li>
+                <li>Interactive pet petting experience</li>
+                <li>Join nearby pet communities and find friends for your pet</li>
+                <li>Make friends</li>
               </ul>
-              <p className="mt-3">
-                <strong>Pro tip:</strong> Keep petting to unlock all the different cat reactions!
-              </p>
             </div>
           </div>
         </div>
