@@ -14,7 +14,8 @@
       "Bash(timeout 5 node:*)",
       "Bash(psql:*)",
       "Bash(timeout 3 bash:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(python -m json.tool:*)"
     ],
     "deny": [],
     "ask": []

@@ -27,34 +27,8 @@ export const fetchPets = async () => {
 };
 
 /**
- * Fetch a single pet by ID from the backend API
- * @param {number} id - The pet ID
- * @returns {Promise<Object>} Pet object
- */
-export const fetchPetById = async (id) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/pets/${id}`);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to fetch pet');
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error(`Error fetching pet ${id} from API:`, error);
-    throw error;
-  }
-};
-
-/**
- * Create a new pet (for future use)
- * @param {Object} petData - Pet data object
+ * Create a new pet
+ * @param {Object} petData - Pet data object (name, species, age, weight, pet_url, pet_url2)
  * @returns {Promise<Object>} Created pet object
  */
 export const createPet = async (petData) => {
@@ -85,41 +59,8 @@ export const createPet = async (petData) => {
 };
 
 /**
- * Update a pet (for future use)
- * @param {number} id - The pet ID
- * @param {Object} petData - Updated pet data
- * @returns {Promise<Object>} Updated pet object
- */
-export const updatePet = async (id, petData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/pets/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(petData),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error || 'Failed to update pet');
-    }
-
-    return result.data;
-  } catch (error) {
-    console.error(`Error updating pet ${id}:`, error);
-    throw error;
-  }
-};
-
-/**
- * Delete a pet (for future use)
- * @param {number} id - The pet ID
+ * Delete a pet by ID
+ * @param {number} id - The pet ID to delete
  * @returns {Promise<Object>} Deleted pet object
  */
 export const deletePet = async (id) => {

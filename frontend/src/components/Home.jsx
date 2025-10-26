@@ -1,6 +1,6 @@
 import { useState, useEffect} from 'react';
 import PetCat from './PetCat';
-import { fetchPets } from '../api/petService';
+import { fetchPets, createPet, deletePet } from '../api/petService';
 import MeowCounter from './MeowCounter';
 
 
@@ -10,6 +10,19 @@ function Home() {
   const [selectedPet, setSelectedPet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Modal state for creating pets
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+  const [newPetForm, setNewPetForm] = useState({
+    name: '',
+    species: '',
+    age: '',
+    weight: '',
+    pet_url: '',
+    pet_url2: ''
+  });
 
    useEffect(() => {
     fetchPetsData();
@@ -46,6 +59,106 @@ function Home() {
     setCount(0); // Reset count when switching pets
   };
 
+  // Modal handlers
+  const openCreateModal = () => {
+    setShowCreateModal(true);
+    setSubmitError(null);
+    setNewPetForm({
+      name: '',
+      species: '',
+      age: '',
+      weight: '',
+      pet_url: '',
+      pet_url2: ''
+    });
+  };
+
+  const closeCreateModal = () => {
+    setShowCreateModal(false);
+    setSubmitError(null);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setNewPetForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError(null);
+    setSubmitting(true);
+
+    try {
+      // Validate required fields
+      if (!newPetForm.name.trim() || !newPetForm.species.trim()) {
+        setSubmitError('Name and species are required');
+        setSubmitting(false);
+        return;
+      }
+
+      // Prepare data - convert empty strings to null for optional fields
+      const petData = {
+        name: newPetForm.name.trim(),
+        species: newPetForm.species.trim(),
+        age: newPetForm.age ? parseInt(newPetForm.age) : null,
+        weight: newPetForm.weight ? parseFloat(newPetForm.weight) : null,
+        pet_url: newPetForm.pet_url.trim() || null,
+        pet_url2: newPetForm.pet_url2.trim() || null
+      };
+
+      const createdPet = await createPet(petData);
+      console.log('✅ Pet created:', createdPet);
+
+      // Refresh the pet list
+      await fetchPetsData();
+
+      // Select the newly created pet
+      setSelectedPet(createdPet);
+      setCount(0);
+
+      // Close modal
+      closeCreateModal();
+    } catch (error) {
+      console.error('Error creating pet:', error);
+      setSubmitError(error.message || 'Failed to create pet');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeletePet = async (petId, petName) => {
+    const confirmed = window.confirm(
+      `Are you sure you want to delete ${petName}? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await deletePet(petId);
+      console.log('✅ Pet deleted:', petId);
+
+      // Refresh the pet list
+      const updatedPets = await fetchPets();
+      setPets(updatedPets);
+
+      // If deleted pet was selected, select the first available pet
+      if (selectedPet?.id === petId) {
+        if (updatedPets.length > 0) {
+          setSelectedPet(updatedPets[0]);
+        } else {
+          setSelectedPet(null);
+        }
+        setCount(0);
+      }
+    } catch (error) {
+      console.error('Error deleting pet:', error);
+      alert(`Failed to delete pet: ${error.message}`);
+    }
+  };
+
   // Calculate cyclePosition once to follow DRY principle
   const cyclePosition = count > 10 ? (count - 10) % 12 : null
 
@@ -79,11 +192,16 @@ function Home() {
     );
   }
 
-  if (!selectedPet) {
+  if (!selectedPet && pets.length === 0) {
     return (
       <div className="container mt-5">
         <div className="alert alert-warning" role="alert">
-          No pets found in database. Check console for errors.
+          No pets found in database.
+        </div>
+        <div className="text-center">
+          <button className="btn btn-primary" onClick={openCreateModal}>
+            Create Your First Pet
+          </button>
         </div>
       </div>
     );
@@ -92,16 +210,34 @@ function Home() {
   return (
     <>
       <div className="container mt-4">
-        <h2 className="text-center mb-3">Choose Your Pet</h2>
-        <div className="d-flex justify-content-center gap-3 mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h2 className="mb-0">Choose Your Pet</h2>
+          <button className="btn btn-success" onClick={openCreateModal}>
+            + Create New Pet
+          </button>
+        </div>
+
+        <div className="d-flex justify-content-center gap-3 mb-4 flex-wrap">
           {pets.map((pet) => (
-            <button
-              key={pet.id}
-              className={`btn ${selectedPet.id === pet.id ? 'btn-primary' : 'btn-outline-primary'}`}
-              onClick={() => handlePetChange(pet)}
-            >
-              {pet.name} ({pet.species})
-            </button>
+            <div key={pet.id} className="position-relative">
+              <button
+                className={`btn ${selectedPet?.id === pet.id ? 'btn-primary' : 'btn-outline-primary'}`}
+                onClick={() => handlePetChange(pet)}
+              >
+                {pet.name} ({pet.species})
+              </button>
+              <button
+                className="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle"
+                style={{ width: '24px', height: '24px', padding: '0', fontSize: '12px', lineHeight: '1' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeletePet(pet.id, pet.name);
+                }}
+                title={`Delete ${pet.name}`}
+              >
+                ×
+              </button>
+            </div>
           ))}
         </div>
         <div className="card mb-4">
@@ -135,6 +271,125 @@ function Home() {
 
 
       <MeowCounter progressPercentage={progressPercentage} showMeow={showMeow} />
+
+      {/* Create Pet Modal */}
+      {showCreateModal && (
+        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Create New Pet</h5>
+                <button type="button" className="btn-close" onClick={closeCreateModal}></button>
+              </div>
+              <form onSubmit={handleCreateSubmit}>
+                <div className="modal-body">
+                  {submitError && (
+                    <div className="alert alert-danger" role="alert">
+                      {submitError}
+                    </div>
+                  )}
+
+                  <div className="mb-3">
+                    <label htmlFor="name" className="form-label">Pet Name <span className="text-danger">*</span></label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="name"
+                      name="name"
+                      value={newPetForm.name}
+                      onChange={handleFormChange}
+                      required
+                      placeholder="Enter pet name"
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="species" className="form-label">Species <span className="text-danger">*</span></label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="species"
+                      name="species"
+                      value={newPetForm.species}
+                      onChange={handleFormChange}
+                      required
+                      placeholder="e.g., cat, dog, rabbit"
+                    />
+                  </div>
+
+                  <div className="row">
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="age" className="form-label">Age (years)</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        id="age"
+                        name="age"
+                        value={newPetForm.age}
+                        onChange={handleFormChange}
+                        min="0"
+                        placeholder="Optional"
+                      />
+                    </div>
+
+                    <div className="col-md-6 mb-3">
+                      <label htmlFor="weight" className="form-label">Weight (kg)</label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        id="weight"
+                        name="weight"
+                        value={newPetForm.weight}
+                        onChange={handleFormChange}
+                        min="0"
+                        step="0.1"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="pet_url" className="form-label">Pet Image URL (Default)</label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      id="pet_url"
+                      name="pet_url"
+                      value={newPetForm.pet_url}
+                      onChange={handleFormChange}
+                      placeholder="https://example.com/pet-image.jpg"
+                    />
+                    <small className="form-text text-muted">URL to the default pet image</small>
+                  </div>
+
+                  <div className="mb-3">
+                    <label htmlFor="pet_url2" className="form-label">Pet Image URL (Happy/Petted)</label>
+                    <input
+                      type="url"
+                      className="form-control"
+                      id="pet_url2"
+                      name="pet_url2"
+                      value={newPetForm.pet_url2}
+                      onChange={handleFormChange}
+                      placeholder="https://example.com/pet-happy-image.jpg"
+                    />
+                    <small className="form-text text-muted">URL to the happy/petted pet image</small>
+                  </div>
+                </div>
+
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={closeCreateModal} disabled={submitting}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" disabled={submitting}>
+                    {submitting ? 'Creating...' : 'Create Pet'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }

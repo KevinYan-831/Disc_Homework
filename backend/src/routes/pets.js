@@ -28,57 +28,32 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/pets/:id - Fetch a specific pet by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log(`📥 Fetching pet with ID: ${id}`);
-
-    const result = await query(
-      'SELECT * FROM pets WHERE id = $1',
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Pet not found'
-      });
-    }
-
-    console.log(`✅ Found pet:`, result.rows[0]);
-
-    res.json({
-      success: true,
-      data: result.rows[0]
-    });
-  } catch (error) {
-    console.error('❌ Error fetching pet:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch pet',
-      message: error.message
-    });
-  }
-});
-
-// POST /api/pets - Create a new pet (optional, for future use)
+// POST /api/pets - Create a new pet
 router.post('/', async (req, res) => {
   try {
     const { name, species, age, weight, pet_url, pet_url2 } = req.body;
 
-    console.log('📥 Creating new pet:', { name, species });
+    // Validation
+    if (!name || !species) {
+      return res.status(400).json({
+        success: false,
+        error: 'Name and species are required'
+      });
+    }
+
+    console.log('📥 Creating new pet:', { name, species, age, weight });
 
     const result = await query(
       'INSERT INTO pets (name, species, age, weight, pet_url, pet_url2) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, species, age, weight, pet_url, pet_url2]
+      [name, species, age || null, weight || null, pet_url || null, pet_url2 || null]
     );
 
     console.log('✅ Pet created:', result.rows[0]);
 
     res.status(201).json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
+      message: 'Pet created successfully'
     });
   } catch (error) {
     console.error('❌ Error creating pet:', error);
@@ -90,43 +65,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PUT /api/pets/:id - Update a pet (optional, for future use)
-router.put('/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, species, age, weight, pet_url, pet_url2 } = req.body;
-
-    console.log(`📥 Updating pet with ID: ${id}`);
-
-    const result = await query(
-      'UPDATE pets SET name = $1, species = $2, age = $3, weight = $4, pet_url = $5, pet_url2 = $6 WHERE id = $7 RETURNING *',
-      [name, species, age, weight, pet_url, pet_url2, id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Pet not found'
-      });
-    }
-
-    console.log('✅ Pet updated:', result.rows[0]);
-
-    res.json({
-      success: true,
-      data: result.rows[0]
-    });
-  } catch (error) {
-    console.error('❌ Error updating pet:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to update pet',
-      message: error.message
-    });
-  }
-});
-
-// DELETE /api/pets/:id - Delete a pet (optional, for future use)
+// DELETE /api/pets/:id - Delete a pet by ID
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
