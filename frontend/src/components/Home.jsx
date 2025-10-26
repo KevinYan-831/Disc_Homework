@@ -1,6 +1,6 @@
 import { useState, useEffect} from 'react';
 import PetCat from './PetCat';
-import { supabase } from '../supabase';
+import { fetchPets } from '../api/petService';
 import MeowCounter from './MeowCounter';
 
 
@@ -12,25 +12,19 @@ function Home() {
   const [error, setError] = useState(null);
 
    useEffect(() => {
-    fetchPets();
+    fetchPetsData();
   }, []);
 
-  const fetchPets = async () => {
+  const fetchPetsData = async () => {
     try {
       setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('Pets')
-        .select('*')
-        .order('id', { ascending: true });
 
-      if (error) {
-        console.error('❌ Supabase error:', error);
-        throw error;
-      }
+      // Fetch pets from the backend API instead of Supabase
+      const data = await fetchPets();
 
-      console.log('✅ Fetched pets:', data);
+      console.log('✅ Fetched pets from backend:', data);
       setPets(data);
+
       // Set first pet as default selected
       if (data && data.length > 0) {
         setSelectedPet(data[0]);
