@@ -1,38 +1,28 @@
-const { Pool } = require('pg');
+const postgres = require('postgres');
+const { drizzle } = require('drizzle-orm/postgres-js');
+const { pets } = require('./schema');
 require('dotenv').config();
 
-// Create a PostgreSQL connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false // Required for Supabase connections
-  }
+// Create PostgreSQL connection
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
+
+// Initialize postgres client
+const client = postgres(connectionString, {
+  ssl: 'require', // Required for Supabase
+  max: 10, // Connection pool size
+  idle_timeout: 20,
+  connect_timeout: 10,
 });
 
-// Test the connection
-pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+// Initialize Drizzle ORM
+const db = drizzle(client, {
+  schema: { pets },
+  logger: true, // Enable query logging
 });
 
-pool.on('error', (err) => {
-  console.error('❌ Unexpected database error:', err);
-});
-
-// Helper function to execute queries
-const query = async (text, params) => {
-  const start = Date.now();
-  try {
-    const res = await pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log('✅ Query executed', { text, duration, rows: res.rowCount });
-    return res;
-  } catch (error) {
-    console.error('❌ Query error:', error);
-    throw error;
-  }
-};
-
-module.exports = {
-  pool,
-  query
-};
+// Export both the db instance and the schema
+module.exports = { db, pets, client };
