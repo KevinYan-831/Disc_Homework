@@ -253,13 +253,13 @@ function Home() {
       </div>
 
 
-        <PetCat 
-            count={count} 
-            onPet={handlePet} 
+        <PetCat
+            count={count}
+            onPet={handlePet}
             cyclePosition={cyclePosition}
             petName={selectedPet.name}
-            pet_default_image={selectedPet.pet_url}
-            pet_changed_image={selectedPet.pet_url2}
+            pet_default_image={selectedPet.petUrl}
+            pet_changed_image={selectedPet.petUrl2}
         />
 
 

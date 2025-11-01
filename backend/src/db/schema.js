@@ -1,7 +1,6 @@
 const { pgTable, serial, text, bigint } = require('drizzle-orm/pg-core');
 
 // Define the pets table schema - matches existing Supabase table
-// Note: Table name is 'Pets' (capital P) in Supabase
 const pets = pgTable('Pets', {
   id: serial('id').primaryKey(),
   name: text('name').notNull(),
