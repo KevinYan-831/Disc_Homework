@@ -1,16 +1,40 @@
-# React + Vite
+# Frontend – Pet Your Pet (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The UI was refined to look cleaner and more modern without changing any functionality.
 
-Currently, two official plugins are available:
+Highlights:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- New typography (Inter) and a soft background gradient for better readability
+- Sticky, translucent navbar with subtle shadow
+- Consistent page container (`.app-shell`) providing max-width and spacing
+- Polished cards, buttons, and progress bar
+- Lightweight animations with reduced-motion support
 
-## React Compiler
+## Customize the theme
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+Edit `src/index.css` design tokens at the top to tweak colors and sizing:
 
-## Expanding the ESLint configuration
+```css
+:root {
+  --bg: #f8fafc;
+  --bg-soft: #eef2ff;
+  --fg: #0f172a;
+  --muted: #475569;
+  --primary: #0ea5e9;
+  --primary-600: #0284c7;
+  --accent: #22c55e;
+  --danger: #ef4444;
+  --card: #ffffff;
+}
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The main content area is wrapped by `.app-shell` in `src/App.jsx` to apply consistent spacing and layout.
+
+## Scripts
+
+- `npm run dev` – start Vite dev server
+- `npm run build` – production build
+- `npm run preview` – preview the production build
+- `npm run lint` – run ESLint
+
+Note: There is an existing ESLint warning in `src/context/AuthContext.jsx` related to Fast Refresh. It does not impact functionality and is outside the scope of the visual updates.

@@ -1,6 +1,36 @@
-import React from 'react';
+import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-function SignUp() {
+function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn, signUp } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      if (isSignUp) {
+        await signUp(email, password);
+        alert('Check your email for confirmation link!');
+      } else {
+        await signIn(email, password);
+        navigate('/');
+      }
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="container mt-4">
       <div className="row justify-content-center">
@@ -12,45 +42,55 @@ function SignUp() {
                 Create an account to save your pet progress!
               </p>
 
-              <form>
-                <div className="mb-3">
-                  <label htmlFor="username" className="form-label">Username</label>
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    id="username" 
-                    placeholder="Enter username" 
-                  />
+              {error && (
+                <div className="alert alert-danger" role="alert">
+                  {error}
                 </div>
+              )}
 
+              <form onSubmit={handleSubmit}>
                 <div className="mb-3">
                   <label htmlFor="email" className="form-label">Email</label>
-                  <input 
-                    type="email" 
-                    className="form-control" 
-                    id="email" 
-                    placeholder="Enter email" 
+                  <input
+                    type="email"
+                    className="form-control"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter email"
+                    required
                   />
                 </div>
 
                 <div className="mb-3">
                   <label htmlFor="password" className="form-label">Password</label>
-                  <input 
-                    type="password" 
-                    className="form-control" 
-                    id="password" 
-                    placeholder="Enter password" 
+                  <input
+                    type="password"
+                    className="form-control"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    required
+                    minLength="6"
                   />
                 </div>
 
-                <button type="submit" className="btn btn-primary w-100 mb-3">
-                  Sign Up
+                <button
+                  type="submit"
+                  className="btn btn-primary w-100 mb-3"
+                  disabled={loading}
+                >
+                  {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Log In')}
                 </button>
               </form>
 
               <div className="text-center">
                 <p className="mb-0">
-                  Already have an account? <a href="#">Log In</a>
+                  {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
+                  <a href="#" onClick={(e) => { e.preventDefault(); setIsSignUp(!isSignUp); }}>
+                    {isSignUp ? 'Log In' : 'Sign Up'}
+                  </a>
                 </p>
               </div>
             </div>
@@ -61,4 +101,4 @@ function SignUp() {
   );
 }
 
-export default SignUp;
+export default Login;

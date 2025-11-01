@@ -1,13 +1,27 @@
-// API service for fetching pet data from the backend
+import { supabase } from '../config/supabaseClient';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-/**
- * Fetch all pets from the backend API
- * @returns {Promise<Array>} Array of pet objects
- */
+// Helper to get auth headers (returns headers even if not authenticated)
+const getAuthHeaders = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add user ID only if logged in
+  if (session?.user?.id) {
+    headers['x-user-id'] = session.user.id;
+  }
+
+  return headers;
+};
+
 export const fetchPets = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/pets`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_BASE_URL}/pets`, { headers });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -26,18 +40,12 @@ export const fetchPets = async () => {
   }
 };
 
-/**
- * Create a new pet
- * @param {Object} petData - Pet data object (name, species, age, weight, pet_url, pet_url2)
- * @returns {Promise<Object>} Created pet object
- */
 export const createPet = async (petData) => {
   try {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/pets`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(petData),
     });
 
@@ -58,15 +66,12 @@ export const createPet = async (petData) => {
   }
 };
 
-/**
- * Delete a pet by ID
- * @param {number} id - The pet ID to delete
- * @returns {Promise<Object>} Deleted pet object
- */
 export const deletePet = async (id) => {
   try {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_BASE_URL}/pets/${id}`, {
       method: 'DELETE',
+      headers,
     });
 
     if (!response.ok) {

@@ -38,6 +38,6 @@ app.use((err, req, res, next) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`=€ Server running on http://localhost:${PORT}`);
-  console.log(`=Ê API endpoints available at http://localhost:${PORT}/api`);
+  console.log(`=ï¿½ Server running on http://localhost:${PORT}`);
+  console.log(`=ï¿½ API endpoints available at http://localhost:${PORT}/api`);
 });

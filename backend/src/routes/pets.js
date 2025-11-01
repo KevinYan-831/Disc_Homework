@@ -1,24 +1,43 @@
 const express = require('express');
 const { db, pets } = require('../db/config');
-const { eq, desc } = require('drizzle-orm');
+const { eq, and} = require('drizzle-orm');
 
 const router = express.Router();
 
+// Middleware to extract user ID (optional - allows guest access)
+const extractUserId = (req, res, next) => {
+  req.userId = req.headers['x-user-id'] || null;
+  next();
+};
 
-// GET /api/pets - Fetch all pets
+// Apply user extraction to all routes
+router.use(extractUserId);
 
+// GET /api/pets - Fetch user's pets (or empty array if not logged in)
 router.get('/', async (req, res) => {
   try {
-    // Drizzle query: SELECT * FROM pets ORDER BY id ASC
-    const allPets = await db.select().from(pets).orderBy(pets.id);
-    
+    // If no user is logged in, return empty array
+    if (!req.userId) {
+      return res.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
+
+    const allPets = await db
+      .select()
+      .from(pets)
+      .where(eq(pets.userId, req.userId))  // ← Filter by user
+      .orderBy(pets.id);
+
     res.json({
       success: true,
       data: allPets,
       count: allPets.length
     });
   } catch (error) {
-    console.error('❌ Error fetching pets:', error);
+    console.error('Error fetching pets:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch pets',
@@ -27,13 +46,19 @@ router.get('/', async (req, res) => {
   }
 });
 
-// POST /api/pets - Create a new pet
-
+// POST /api/pets - Create pet for current user
 router.post('/', async (req, res) => {
   try {
+    // Require authentication for creating pets
+    if (!req.userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Please log in to create pets'
+      });
+    }
+
     const { name, species, age, weight, pet_url, pet_url2 } = req.body;
 
-    // Validate required fields
     if (!name || !species) {
       return res.status(400).json({
         success: false,
@@ -41,8 +66,8 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Drizzle query: INSERT INTO pets (...) VALUES (...) RETURNING *
     const newPet = await db.insert(pets).values({
+      userId: req.userId,  // ← Set user_id
       name,
       species,
       age: age || null,
@@ -57,7 +82,7 @@ router.post('/', async (req, res) => {
       message: 'Pet created successfully'
     });
   } catch (error) {
-    console.error('❌ Error creating pet:', error);
+    console.error('Error creating pet:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to create pet',
@@ -66,11 +91,17 @@ router.post('/', async (req, res) => {
   }
 });
 
-
-// DELETE /api/pets/:id - Delete a pet
-
+// DELETE /api/pets/:id - Delete pet (only if owned by user)
 router.delete('/:id', async (req, res) => {
   try {
+    // Require authentication for deleting pets
+    if (!req.userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Please log in to delete pets'
+      });
+    }
+
     const petId = parseInt(req.params.id);
 
     if (isNaN(petId)) {
@@ -80,16 +111,21 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // Drizzle query: DELETE FROM pets WHERE id = $1 RETURNING *
+    // Check ownership before deleting
     const deletedPet = await db
       .delete(pets)
-      .where(eq(pets.id, petId))
+      .where(
+        and(
+          eq(pets.id, petId),
+          eq(pets.userId, req.userId)  // ← Only delete if user owns it
+        )
+      )
       .returning();
 
     if (deletedPet.length === 0) {
       return res.status(404).json({
         success: false,
-        error: 'Pet not found'
+        error: 'Pet not found or unauthorized'
       });
     }
 
@@ -99,7 +135,7 @@ router.delete('/:id', async (req, res) => {
       data: deletedPet[0]
     });
   } catch (error) {
-    console.error('❌ Error deleting pet:', error);
+    console.error('Error deleting pet:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete pet',

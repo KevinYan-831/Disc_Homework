@@ -1,4 +1,4 @@
-const { pgTable, serial, text, bigint } = require('drizzle-orm/pg-core');
+const { pgTable, serial, text, bigint, uuid } = require('drizzle-orm/pg-core');
 
 // Define the pets table schema - matches existing Supabase table
 const pets = pgTable('Pets', {
@@ -8,7 +8,8 @@ const pets = pgTable('Pets', {
   weight: bigint('weight', { mode: 'number' }),
   species: text('species').notNull(),
   petUrl: text('pet_url'),
-  petUrl2: text('pet_url2')
+  petUrl2: text('pet_url2'),
+  userId: uuid('user_id').notNull()
 });
 
 module.exports = { pets };
