@@ -8,7 +8,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 
 
 function Home() {
-  const { user } = useAuth();
+  const { user, getAccessToken } = useAuth();
   const navigate = useNavigate();
   const [count, setCount] = useState(0)
   const [pets, setPets] = useState([]);
@@ -37,8 +37,11 @@ function Home() {
     try {
       setLoading(true);
 
-      // Fetch pets from the backend API instead of Supabase
-      const data = await fetchPets();
+      // Get access token from auth context
+      const token = getAccessToken();
+
+      // Fetch pets from the backend API
+      const data = await fetchPets(token);
 
       console.log('✅ Fetched pets from backend:', data);
       setPets(data);
@@ -114,7 +117,10 @@ function Home() {
         pet_url2: newPetForm.pet_url2.trim() || null
       };
 
-      const createdPet = await createPet(petData);
+      // Get access token
+      const token = getAccessToken();
+
+      const createdPet = await createPet(petData, token);
       console.log('✅ Pet created:', createdPet);
 
       // Refresh the pet list
@@ -142,11 +148,14 @@ function Home() {
     if (!confirmed) return;
 
     try {
-      await deletePet(petId);
+      // Get access token
+      const token = getAccessToken();
+      
+      await deletePet(petId, token);
       console.log('✅ Pet deleted:', petId);
 
       // Refresh the pet list
-      const updatedPets = await fetchPets();
+      const updatedPets = await fetchPets(token);
       setPets(updatedPets);
 
       // If deleted pet was selected, select the first available pet
