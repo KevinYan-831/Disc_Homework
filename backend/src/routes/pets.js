@@ -1,102 +1,145 @@
 const express = require('express');
-const router = express.Router();
-const { query } = require('../db/config');
+const { db, pets } = require('../db/config');
+const { eq, and} = require('drizzle-orm');
 
-// GET /api/pets - Fetch all pets from the database
+const router = express.Router();
+
+// Middleware to extract user ID (optional - allows guest access)
+const extractUserId = (req, res, next) => {
+  req.userId = req.headers['x-user-id'] || null;
+  next();
+};
+
+// Apply user extraction to all routes
+router.use(extractUserId);
+
+// GET /api/pets - Fetch user's pets (or empty array if not logged in)
 router.get('/', async (req, res) => {
   try {
-    console.log('📥 Fetching all pets from database...');
+    // If no user is logged in, return empty array
+    if (!req.userId) {
+      return res.json({
+        success: true,
+        data: [],
+        count: 0
+      });
+    }
 
-    const result = await query(
-      'SELECT * FROM pets ORDER BY id ASC'
-    );
-
-    console.log(`✅ Found ${result.rows.length} pets`);
+    const allPets = await db
+      .select()
+      .from(pets)
+      .where(eq(pets.userId, req.userId))  // ← Filter by user
+      .orderBy(pets.id);
 
     res.json({
       success: true,
-      data: result.rows,
-      count: result.rows.length
+      data: allPets,
+      count: allPets.length
     });
   } catch (error) {
-    console.error('❌ Error fetching pets:', error);
+    console.error('Error fetching pets:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch pets',
-      message: error.message
+      details: error.message
     });
   }
 });
 
-// POST /api/pets - Create a new pet
+// POST /api/pets - Create pet for current user
 router.post('/', async (req, res) => {
   try {
+    // Require authentication for creating pets
+    if (!req.userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Please log in to create pets'
+      });
+    }
+
     const { name, species, age, weight, pet_url, pet_url2 } = req.body;
 
-    // Validation
     if (!name || !species) {
       return res.status(400).json({
         success: false,
-        error: 'Name and species are required'
+        error: 'Name and species are required fields'
       });
     }
 
-    console.log('📥 Creating new pet:', { name, species, age, weight });
-
-    const result = await query(
-      'INSERT INTO pets (name, species, age, weight, pet_url, pet_url2) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, species, age || null, weight || null, pet_url || null, pet_url2 || null]
-    );
-
-    console.log('✅ Pet created:', result.rows[0]);
+    const newPet = await db.insert(pets).values({
+      userId: req.userId,  // ← Set user_id
+      name,
+      species,
+      age: age || null,
+      weight: weight || null,
+      petUrl: pet_url || null,
+      petUrl2: pet_url2 || null,
+    }).returning();
 
     res.status(201).json({
       success: true,
-      data: result.rows[0],
+      data: newPet[0],
       message: 'Pet created successfully'
     });
   } catch (error) {
-    console.error('❌ Error creating pet:', error);
+    console.error('Error creating pet:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to create pet',
-      message: error.message
+      details: error.message
     });
   }
 });
 
-// DELETE /api/pets/:id - Delete a pet by ID
+// DELETE /api/pets/:id - Delete pet (only if owned by user)
 router.delete('/:id', async (req, res) => {
   try {
-    const { id } = req.params;
-
-    console.log(`📥 Deleting pet with ID: ${id}`);
-
-    const result = await query(
-      'DELETE FROM pets WHERE id = $1 RETURNING *',
-      [id]
-    );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({
+    // Require authentication for deleting pets
+    if (!req.userId) {
+      return res.status(401).json({
         success: false,
-        error: 'Pet not found'
+        error: 'Please log in to delete pets'
       });
     }
 
-    console.log('✅ Pet deleted:', result.rows[0]);
+    const petId = parseInt(req.params.id);
+
+    if (isNaN(petId)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid pet ID'
+      });
+    }
+
+    // Check ownership before deleting
+    const deletedPet = await db
+      .delete(pets)
+      .where(
+        and(
+          eq(pets.id, petId),
+          eq(pets.userId, req.userId)  // ← Only delete if user owns it
+        )
+      )
+      .returning();
+
+    if (deletedPet.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Pet not found or unauthorized'
+      });
+    }
 
     res.json({
       success: true,
       message: 'Pet deleted successfully',
-      data: result.rows[0]
+      data: deletedPet[0]
     });
   } catch (error) {
-    console.error('❌ Error deleting pet:', error);
+    console.error('Error deleting pet:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to delete pet',
-      message: error.message
+      details: error.message
     });
   }
 });

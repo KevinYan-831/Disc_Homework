@@ -1,10 +1,15 @@
 import { useState, useEffect} from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import PetCat from './PetCat';
 import { fetchPets, createPet, deletePet } from '../api/petService';
 import MeowCounter from './MeowCounter';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 
 function Home() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [count, setCount] = useState(0)
   const [pets, setPets] = useState([]);
   const [selectedPet, setSelectedPet] = useState(null);
@@ -195,13 +200,31 @@ function Home() {
   if (!selectedPet && pets.length === 0) {
     return (
       <div className="container mt-5">
-        <div className="alert alert-warning" role="alert">
-          No pets found in database.
-        </div>
-        <div className="text-center">
-          <button className="btn btn-primary" onClick={openCreateModal}>
-            Create Your First Pet
-          </button>
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-8 col-lg-6">
+            <div className="text-center py-5">
+              <div className="mb-4">
+                <i className="bi bi-emoji-frown" style={{ fontSize: '4rem', color: '#ffc107' }}></i>
+              </div>
+              <h3 className="mb-3">No Pets Yet!</h3>
+              <p className="text-muted mb-4">
+                {user
+                  ? "Start your pet collection by creating your first virtual pet!"
+                  : "Please log in to create and manage your virtual pets."}
+              </p>
+              {user ? (
+                <button className="btn btn-primary btn-lg" onClick={openCreateModal}>
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Create Your First Pet
+                </button>
+              ) : (
+                <button className="btn btn-primary btn-lg" onClick={() => navigate('/login')}>
+                  <i className="bi bi-box-arrow-in-right me-2"></i>
+                  Log In / Sign Up
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -209,66 +232,102 @@ function Home() {
 
   return (
     <>
-      <div className="container mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2 className="mb-0">Choose Your Pet</h2>
-          <button className="btn btn-success" onClick={openCreateModal}>
-            + Create New Pet
-          </button>
-        </div>
-
-        <div className="d-flex justify-content-center gap-3 mb-4 flex-wrap">
-          {pets.map((pet) => (
-            <div key={pet.id} className="position-relative">
-              <button
-                className={`btn ${selectedPet?.id === pet.id ? 'btn-primary' : 'btn-outline-primary'}`}
-                onClick={() => handlePetChange(pet)}
-              >
-                {pet.name} ({pet.species})
-              </button>
-              <button
-                className="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle"
-                style={{ width: '24px', height: '24px', padding: '0', fontSize: '12px', lineHeight: '1' }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeletePet(pet.id, pet.name);
-                }}
-                title={`Delete ${pet.name}`}
-              >
-                ×
-              </button>
+      <div className="container mt-4 px-3 px-md-4">
+        <div className="row">
+          <div className="col-12">
+            <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-3">
+              <h2 className="mb-0">
+                <i className="bi bi-hearts me-2 text-danger"></i>
+                Choose Your Pet
+              </h2>
+              {user && (
+                <button className="btn btn-success" onClick={openCreateModal}>
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Create New Pet
+                </button>
+              )}
             </div>
-          ))}
-        </div>
-        <div className="card mb-4">
-          <div className="card-body">
-            <h3 className="card-title">{selectedPet.name}</h3>
-            <p className="card-text">
-              <strong>Species:</strong> {selectedPet.species}<br />
-              <strong>Age:</strong> {selectedPet.age} years old<br />
-              <strong>Weight:</strong> {selectedPet.weight} kg
-            </p>
+
+            <div className="d-flex justify-content-center gap-2 gap-md-3 mb-4 flex-wrap">
+              {pets.map((pet) => (
+                <div key={pet.id} className="position-relative">
+                  <button
+                    className={`btn ${selectedPet?.id === pet.id ? 'btn-primary' : 'btn-outline-primary'} btn-sm btn-md-md`}
+                    onClick={() => handlePetChange(pet)}
+                  >
+                    <i className="bi bi-star-fill me-1"></i>
+                    {pet.name} ({pet.species})
+                  </button>
+                  {user && (
+                    <button
+                      className="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle"
+                      style={{ width: '24px', height: '24px', padding: '0', fontSize: '12px', lineHeight: '1', zIndex: 10 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePet(pet.id, pet.name);
+                      }}
+                      title={`Delete ${pet.name}`}
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="row justify-content-center">
+              <div className="col-12 col-md-10 col-lg-8">
+                <div className="card shadow-sm mb-4">
+                  <div className="card-body">
+                    <h3 className="card-title">
+                      <i className="bi bi-info-circle me-2 text-primary"></i>
+                      {selectedPet.name}
+                    </h3>
+                    <div className="row mt-3">
+                      <div className="col-6 col-md-4 mb-2">
+                        <strong><i className="bi bi-tag me-1"></i>Species:</strong> {selectedPet.species}
+                      </div>
+                      <div className="col-6 col-md-4 mb-2">
+                        <strong><i className="bi bi-calendar me-1"></i>Age:</strong> {selectedPet.age} years
+                      </div>
+                      <div className="col-6 col-md-4 mb-2">
+                        <strong><i className="bi bi-speedometer me-1"></i>Weight:</strong> {selectedPet.weight} kg
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-
-        <PetCat 
-            count={count} 
-            onPet={handlePet} 
-            cyclePosition={cyclePosition}
-            petName={selectedPet.name}
-            pet_default_image={selectedPet.pet_url}
-            pet_changed_image={selectedPet.pet_url2}
-        />
-
-
-      <div className="progress mt-3" role="progressbar" aria-valuenow={progressPercentage} aria-valuemin="0" aria-valuemax="100">
-        <div className="progress-bar" style={{ width: `${progressPercentage}%` }}>
-          {progressPercentage}%
+      <div className="container-fluid px-3 px-md-4">
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-10 col-lg-8">
+            <PetCat
+                count={count}
+                onPet={handlePet}
+                cyclePosition={cyclePosition}
+                petName={selectedPet.name}
+                pet_default_image={selectedPet.petUrl}
+                pet_changed_image={selectedPet.petUrl2}
+            />
+          </div>
         </div>
       </div>
 
+      <div className="container px-3 px-md-4">
+        <div className="row justify-content-center">
+          <div className="col-12 col-md-10 col-lg-8">
+            <div className="progress mt-3 mb-3" style={{ height: '30px' }} role="progressbar" aria-valuenow={progressPercentage} aria-valuemin="0" aria-valuemax="100">
+              <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: `${progressPercentage}%`, fontSize: '16px', lineHeight: '30px' }}>
+                {progressPercentage}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <MeowCounter progressPercentage={progressPercentage} showMeow={showMeow} />
 
