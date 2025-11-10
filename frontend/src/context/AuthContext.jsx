@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../config/supabaseClient';
 
 const AuthContext = createContext({});
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -13,54 +14,116 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
+    // Check if user has a stored session
+    const storedSession = localStorage.getItem('session');
+    if (storedSession) {
+      try {
+        const parsedSession = JSON.parse(storedSession);
+        setSession(parsedSession);
+        setUser(parsedSession.user);
+      } catch (error) {
+        console.error('Error parsing stored session:', error);
+        localStorage.removeItem('session');
       }
-    );
-
-    return () => subscription.unsubscribe();
+    }
+    setLoading(false);
   }, []);
 
   const signUp = async (email, password) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to sign up');
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error('Error in signUp:', error);
+      throw error;
+    }
   };
 
   const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    return data;
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to sign in');
+      }
+
+      // Store session in state and localStorage
+      setSession(result.data.session);
+      setUser(result.data.user);
+      localStorage.setItem('session', JSON.stringify(result.data.session));
+
+      return result.data;
+    } catch (error) {
+      console.error('Error in signIn:', error);
+      throw error;
+    }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      const token = session?.access_token;
+      
+      if (token) {
+        await fetch(`${API_BASE_URL}/auth/signout`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+      }
+
+      // Clear local state
+      setUser(null);
+      setSession(null);
+      localStorage.removeItem('session');
+    } catch (error) {
+      console.error('Error in signOut:', error);
+      // Clear local state even if API call fails
+      setUser(null);
+      setSession(null);
+      localStorage.removeItem('session');
+      throw error;
+    }
+  };
+
+  const getAccessToken = () => {
+    return session?.access_token || null;
   };
 
   const value = {
     user,
+    session,
     loading,
     signUp,
     signIn,
     signOut,
+    getAccessToken,
   };
 
   return (

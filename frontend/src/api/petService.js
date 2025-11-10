@@ -1,26 +1,23 @@
-import { supabase } from '../config/supabaseClient';
-
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
-// Helper to get auth headers (returns headers even if not authenticated)
-const getAuthHeaders = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-
+// Helper to get auth headers
+// Note: This should be called with the session from useAuth context
+const getAuthHeaders = (accessToken = null) => {
   const headers = {
     'Content-Type': 'application/json',
   };
 
-  // Add user ID only if logged in
-  if (session?.user?.id) {
-    headers['x-user-id'] = session.user.id;
+  // Add Bearer token if logged in
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
   }
 
   return headers;
 };
 
-export const fetchPets = async () => {
+export const fetchPets = async (accessToken = null) => {
   try {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders(accessToken);
     const response = await fetch(`${API_BASE_URL}/pets`, { headers });
 
     if (!response.ok) {
@@ -40,9 +37,9 @@ export const fetchPets = async () => {
   }
 };
 
-export const createPet = async (petData) => {
+export const createPet = async (petData, accessToken = null) => {
   try {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders(accessToken);
     const response = await fetch(`${API_BASE_URL}/pets`, {
       method: 'POST',
       headers,
@@ -66,9 +63,9 @@ export const createPet = async (petData) => {
   }
 };
 
-export const deletePet = async (id) => {
+export const deletePet = async (id, accessToken = null) => {
   try {
-    const headers = await getAuthHeaders();
+    const headers = getAuthHeaders(accessToken);
     const response = await fetch(`${API_BASE_URL}/pets/${id}`, {
       method: 'DELETE',
       headers,

@@ -1,43 +1,62 @@
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
-app.use(cors()); // Allow frontend to make requests
-app.use(bodyParser.json()); // Parse JSON request bodies
-app.use(express.json());
+// Import middleware
+const { logger } = require('./middleware/logger');
+const { errorHandler, notFound } = require('./middleware/errorHandler');
 
 // Import routes
-const petsRoutes = require('./routes/pets');
+const authRoutes = require('./routers/auth');
+const petsRoutes = require('./routers/pets');
 
-// Use routes
-app.use('/api/pets', petsRoutes);
+// Middleware
+app.use(cors({
+  origin: process.env.FRONTEND_URL || '*',
+  credentials: true
+}));
+app.use(express.json());
+app.use(logger); // Request logging
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Backend server is running!' });
+  res.json({ 
+    status: 'ok', 
+    message: 'Backend server is running!',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Root endpoint
 app.get('/', (req, res) => {
-  res.json({ message: 'Pet Your Pet Backend API' });
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: err.message
+  res.json({ 
+    message: 'Pet Your Pet Backend API',
+    version: '2.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth',
+      pets: '/api/pets'
+    }
   });
 });
 
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/pets', petsRoutes);
+
+// 404 handler
+app.use(notFound);
+
+// Error handling middleware (must be last)
+app.use(errorHandler);
+
 // Start server
 app.listen(PORT, () => {
-  console.log(`=� Server running on http://localhost:${PORT}`);
-  console.log(`=� API endpoints available at http://localhost:${PORT}/api`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`📡 API endpoints available at http://localhost:${PORT}/api`);
+  console.log(`🔒 Auth endpoints: http://localhost:${PORT}/api/auth`);
+  console.log(`🐾 Pets endpoints: http://localhost:${PORT}/api/pets`);
 });
